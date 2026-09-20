@@ -1,0 +1,35 @@
+[
+ {
+  "code": "11440",
+  "name": "서울특별시 마포구",
+  "asset": "오피스텔",
+  "source": "국토교통부 실거래가 공개시스템 CSV (rt.molit.go.kr)",
+  "from": "2024-09-22",
+  "to": "2026-09-21",
+  "fetchedAt": "2026-09-21",
+  "rentCount": 11825,
+  "tradeCount": 1783
+ },
+ {
+  "code": "11560",
+  "name": "서울특별시 영등포구",
+  "asset": "오피스텔",
+  "source": "국토교통부 실거래가 공개시스템 CSV (rt.molit.go.kr)",
+  "from": "2024-09-22",
+  "to": "2026-09-21",
+  "fetchedAt": "2026-09-21",
+  "rentCount": 21750,
+  "tradeCount": 2290
+ },
+ {
+  "code": "11680",
+  "name": "서울특별시 강남구",
+  "asset": "오피스텔",
+  "source": "국토교통부 실거래가 공개시스템 CSV (rt.molit.go.kr)",
+  "from": "2024-09-22",
+  "to": "2026-09-21",
+  "fetchedAt": "2026-09-21",
+  "rentCount": 8328,
+  "tradeCount": 2017
+ }
+]
