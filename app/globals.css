@@ -146,6 +146,9 @@ table { border-collapse: collapse; width: 100%; }
 .data th.sortable.on button { color: var(--ink); font-weight: 600; }
 .data th.sortable.on button::after { content: " ↓"; }
 .data td { padding: 9px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+/* 표는 가로 스크롤 영역 안에 있다 — 칸이 좁아져 단지명이 글자 단위로 쪼개지지 않게 한다 */
+.data:not(.kv) td { overflow-wrap: normal; white-space: nowrap; }
+.data:not(.kv) td:first-child { white-space: normal; min-width: 11em; }
 .data tbody tr { cursor: default; }
 #market .data tbody tr { cursor: pointer; }
 #market .data tbody tr:hover { background: var(--soft); }

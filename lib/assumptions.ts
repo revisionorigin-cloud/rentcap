@@ -49,11 +49,11 @@ export function suggest(prev: UWInput, m: Market, c: ComplexStat | null): { inpu
       from.depositPerUnit = `${scope} 월세 계약 보증금 중앙값`;
     }
   } else {
-    if (m.kpi.medAreaM2 !== null) {
+    if (m.kpi.medAreaM2 != null) {
       next.areaPy = round(m.kpi.medAreaM2 / PY, 2);
       from.areaPy = `${m.meta.name} 임대 계약 전용면적 중앙값 ${m.kpi.medAreaM2.toFixed(1)}㎡`;
     }
-    if (m.kpi.depositToPricePct !== null) {
+    if (m.kpi.depositToPricePct != null) {
       next.depositPerUnit = Math.round((next.pricePerPy * next.areaPy * m.kpi.depositToPricePct) / 100 / 100) * 100;
       from.depositPerUnit = `${m.meta.name} 단지별 매매가 대비 보증금 중앙값 ${m.kpi.depositToPricePct.toFixed(1)}%`;
     }
@@ -70,7 +70,7 @@ export function suggest(prev: UWInput, m: Market, c: ComplexStat | null): { inpu
   }
   next.convRatePct = m.conv.ratePct;
   from.convRatePct = m.conv.method === "implied" ? `${m.meta.name} 전세·월세 쌍 ${m.conv.n.toLocaleString()}건에서 역산` : "표본 부족 — 기본값";
-  if (m.kpi.rentYoYPct !== null) {
+  if (m.kpi.rentYoYPct != null) {
     next.rentGrowthPct = round(clamp(m.kpi.rentYoYPct, 0, 4), 1);
     from.rentGrowthPct = `동일 단지 신규 월세 전년비 ${m.kpi.rentYoYPct.toFixed(1)}% (${m.kpi.rentYoYN}개 단지) — 0~4% 범위로 제한`;
   }

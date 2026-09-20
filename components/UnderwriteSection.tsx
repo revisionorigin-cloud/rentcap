@@ -32,7 +32,9 @@ export function UnderwriteSection({ input, set, result, pos, from, rates, bench,
     if (negLev) notes.push({ tone: "warn", text: `역레버리지 — 진입 Cap ${pct(r.goingInCap)}가 대출금리 ${pctv(allIn, 2)}보다 낮습니다. 대출을 늘릴수록 보유기간 현금수익률이 떨어지고, 수익은 매각차익에 의존합니다.` });
     else if (r.loan > 0) notes.push({ tone: "ok", text: `정(+)의 레버리지 — 진입 Cap ${pct(r.goingInCap)}가 대출금리 ${pctv(allIn, 2)}보다 높습니다.` });
     if (r.minDscr !== null) notes.push({ tone: r.minDscr < 1.2 ? "warn" : "ok", text: `최소 DSCR ${mult(r.minDscr)} — 통상 요구 수준 1.2x ${r.minDscr < 1.2 ? "미달" : "충족"}. 1년차 손익분기 입주율 ${r.breakevenOcc === null ? "–" : pct(r.breakevenOcc, 1)}.` });
-    if (r.effLtv > 0.7) notes.push({ tone: "warn", text: `보증금을 포함한 실질 LTV가 ${pct(r.effLtv, 1)}입니다. 대주는 선순위 임차보증금을 대출 한도에서 차감하는 것이 일반적이므로 LTV ${pctv(input.ltvPct, 0)} 조달이 어려울 수 있습니다.` });
+    if (r.effLtv > 0.7) notes.push({ tone: "warn", text: r.loan > 0
+      ? `보증금을 포함한 실질 LTV가 ${pct(r.effLtv, 1)}입니다. 대주는 선순위 임차보증금을 대출 한도에서 차감하는 것이 일반적이므로 LTV ${pctv(input.ltvPct, 0)} 조달이 어려울 수 있습니다.`
+      : `승계 보증금만으로 매입가의 ${pct(r.effLtv, 1)}입니다 (반전세 구조). 추가 대출 여력이 없고, 임차인이 나갈 때 보증금을 돌려줄 유동성 — 역전세 위험 — 을 따로 확보해야 합니다.` });
     if (r.leveredIrr !== null) notes.push({ tone: r.leveredIrr * 100 >= targetIrr ? "ok" : "warn", text: `Levered IRR ${pct(r.leveredIrr)} — 목표 ${pctv(targetIrr, 1)} ${r.leveredIrr * 100 >= targetIrr ? "충족" : "미달"}.` });
     if (aggressive.length > 0) notes.push({ tone: "info", text: `시장 대비 공격적인 가정 ${aggressive.length}개 — 아래 입력란의 표시를 확인하십시오.` });
   }

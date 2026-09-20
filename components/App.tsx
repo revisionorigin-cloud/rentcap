@@ -12,6 +12,7 @@ import { BANDS, type AreaBand } from "@/lib/types";
 import { underwrite, type UWInput } from "@/lib/underwrite";
 
 const DEFAULT_CODE = "11560";
+const API_V = "2"; // 응답 형식을 바꾸면 올린다 — CDN·브라우저의 옛 캐시를 피한다
 
 type Shared = { i: UWInput; bench: Bench; target: number };
 
@@ -89,14 +90,18 @@ export default function App() {
   const marketKey = `${code}|${band}`;
   useEffect(() => {
     const ac = new AbortController();
-    getJson<Market>(`/api/market?code=${code}&band=${band}`, ac.signal)
+    getJson<Market>(`/api/market?v=${API_V}&code=${code}&band=${band}`, ac.signal)
       .then((m) => {
         setMarketState({ key: `${code}|${band}`, data: m, error: null });
         if (autofill.current) {
           autofill.current = false;
-          const s = suggest(inputRef.current, m, null);
-          setInput(s.input);
-          setFrom(s.from);
+          try {
+            const s = suggest(inputRef.current, m, null);
+            setInput(s.input);
+            setFrom(s.from);
+          } catch {
+            // 자동 채우기가 실패해도 시장 화면은 보여준다 — 기본 가정으로 시작
+          }
         }
       })
       .catch((e: unknown) => {
@@ -114,7 +119,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedKey) return;
     const ac = new AbortController();
-    getJson<ComplexDetail>(`/api/complex?code=${code}&key=${encodeURIComponent(selectedKey)}`, ac.signal)
+    getJson<ComplexDetail>(`/api/complex?v=${API_V}&code=${code}&key=${encodeURIComponent(selectedKey)}`, ac.signal)
       .then((d) => setDetailState({ key: `${code}|${selectedKey}`, data: d, error: null }))
       .catch(() => { if (!ac.signal.aborted) setSelectedKey(null); });
     return () => ac.abort();
