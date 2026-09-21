@@ -271,7 +271,7 @@ export default function App() {
 
         <UnderwriteSection input={input} set={set} result={result} pos={pos} from={from} rates={rates}
           bench={bench} onBench={setBench} onShare={onShare} onCsv={onCsv} shareMsg={shareMsg}
-          verdict={V} basis={basis?.label ?? null} edited={edited} onReset={onReset} />
+          verdict={V} basis={basis?.label ?? null} basisIsComplex={Boolean(basis?.complexKey)} edited={edited} onReset={onReset} />
 
         <LimitsSection input={input} result={result} L={L} targetIrr={target} onTarget={setTarget} legalCapPct={legalCapPct} />
 

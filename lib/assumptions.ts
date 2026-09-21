@@ -136,6 +136,7 @@ export function positions(i: UWInput, m: Market | null, allInRatePct: number, co
       text: `회사채 AA- 3년 ${corpAAPct.toFixed(2)}% 대비 ${d >= 0 ? "+" : ""}${Math.round(d * 100)}bp`,
     };
   }
+  out.units = { stance: "na", text: "실거래가에는 건물 전체 세대수가 없습니다 — 단지를 골라도 이 값은 바뀌지 않습니다. 건축물대장에서 확인해 직접 입력하십시오" };
   out.vacancyPct = { stance: "na", text: "실거래가 자료에는 공실 정보가 없습니다 — 현장 실사 값으로 대체하십시오" };
   out.opexPct = { stance: "na", text: "운영비는 공공데이터에 없습니다 — 임대관리 견적으로 대체하십시오" };
   return out;

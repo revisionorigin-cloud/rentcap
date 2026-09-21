@@ -271,6 +271,7 @@ details[open] summary::before { content: "−"; }
 
 /* ── 가정 기준 · 되돌리기 */
 .basis { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 0 0 14px; font-size: 13px; }
+.basis-note { font-size: 12.5px; line-height: 1.65; color: var(--ink-2); background: var(--soft); border-left: 2px solid var(--rule-2); padding: 10px 12px; margin: 0 0 22px; }
 .basis-label { color: var(--muted); font-size: 12px; margin-right: 8px; }
 .basis-edited { margin-left: 8px; font-size: 10.5px; font-weight: 600; color: var(--warn); border: 1px solid currentColor; border-radius: 2px; padding: 1px 5px; }
 .link:disabled { color: var(--faint); text-decoration: none; cursor: default; }
@@ -313,7 +314,7 @@ select option:disabled { color: #b3b8c1; }
   .steps a, .steps li + li a { padding: 16px 0; }
   .table-tools input { width: 100%; }
 }
-@media print { .mbar, .steps, .table-tools, .basis { display: none !important; } }
+@media print { .mbar, .steps, .table-tools, .basis, .basis-note { display: none !important; } }
 
 /* ── responsive */
 @media (max-width: 1080px) {

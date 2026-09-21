@@ -16,11 +16,11 @@ const ACQ_PRESETS = [
   { id: "custom", label: "직접 입력" },
 ];
 
-export function UnderwriteSection({ input, set, result, pos, from, rates, bench, onBench, onShare, onCsv, shareMsg, verdict, basis, edited, onReset }: {
+export function UnderwriteSection({ input, set, result, pos, from, rates, bench, onBench, onShare, onCsv, shareMsg, verdict, basis, basisIsComplex, edited, onReset }: {
   input: UWInput; set: <K extends keyof UWInput>(k: K, v: UWInput[K]) => void; result: UWResult;
   pos: Partial<Record<keyof UWInput | "allInRate", Position>>; from: Provenance; rates: Rates | null;
   bench: Bench; onBench: (b: Bench) => void; onShare: () => void; onCsv: () => void; shareMsg: string | null;
-  verdict: Verdict; basis: string | null; edited: boolean; onReset: () => void;
+  verdict: Verdict; basis: string | null; basisIsComplex: boolean; edited: boolean; onReset: () => void;
 }) {
   const r = result;
   const allIn = r.rate * 100;
@@ -55,9 +55,14 @@ export function UnderwriteSection({ input, set, result, pos, from, rates, bench,
             </div>
             <button type="button" className="link" onClick={onReset} disabled={!edited}>시장값으로 되돌리기</button>
           </div>
+          <p className="basis-note">
+            {basisIsComplex
+              ? <>지금 검토 중인 물건 — <b>{basis}</b>와 같은 조건(매매단가 · 임대료 · 보증금 · 평형)의 오피스텔 <b>{input.units}세대</b>입니다. 세대수는 실거래가에 없으므로 실제 세대수로 고쳐 넣으십시오.</>
+              : <>지금 검토 중인 물건 — 이 지역의 <b>평균적인 오피스텔 {input.units}세대</b>를 가정한 가상의 물건입니다. 특정 단지를 검토하려면 위 표에서 단지를 고르고 「이 단지 값으로 가정 채우기」를 누르십시오. 신축처럼 거래 기록이 없는 물건은 비슷한 연차 단지의 값을 참고해 직접 입력합니다.</>}
+          </p>
           <fieldset>
             <legend>자산</legend>
-            <NumField label="세대수" unit="세대" value={input.units} step={1} min={1} onChange={(v) => set("units", Math.round(v))} />
+            <NumField label="세대수" unit="세대" value={input.units} step={1} min={1} onChange={(v) => set("units", Math.round(v))} position={pos.units} />
             <NumField label="세대당 전용면적" unit="평" value={input.areaPy} step={0.1} min={1} onChange={(v) => set("areaPy", v)} source={from.areaPy} derived={`= ${num(input.areaPy * PY, 1)}㎡ · 총 전용 ${num(r.gla, 0)}평`} />
             <NumField label="매입 단가" unit="만원/전용평" value={input.pricePerPy} step={10} min={1} onChange={(v) => set("pricePerPy", v)} position={pos.pricePerPy} source={from.pricePerPy} derived={`매입가 ${eok(r.price)} · 세대당 ${num(r.price / input.units / 10000, 2)}억`} />
           </fieldset>
