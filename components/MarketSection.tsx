@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Scatter, TimeScatter } from "./charts";
 import { Kpi, SectionHead } from "./fields";
 import { num, pctv, ymLabel, ymdLabel } from "@/lib/format";
@@ -23,14 +23,28 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
 }) {
   const [sort, setSort] = useState<SortKey>("nRent");
   const [showAll, setShowAll] = useState(false);
+  const [query, setQuery] = useState("");
+  const detailRef = useRef<HTMLDivElement | null>(null);
+  const pickedByUser = useRef(false);
   const sido = regions?.regions.find((s) => s.sgg.some((g) => g.code === code)) ?? regions?.regions[0];
   const snapSet = useMemo(() => new Set(regions?.snapshots.map((s) => s.code) ?? []), [regions]);
 
   const sorted = useMemo(() => {
     if (!market) return [];
-    return [...market.complexes].sort((a, b) => ((b[sort] ?? -Infinity) as number) - ((a[sort] ?? -Infinity) as number));
-  }, [market, sort]);
-  const rows = showAll ? sorted : sorted.slice(0, 12);
+    const q = query.trim().replace(/\s+/g, "").toLowerCase();
+    const list = q ? market.complexes.filter((c) => `${c.name}${c.dong}`.replace(/\s+/g, "").toLowerCase().includes(q)) : market.complexes;
+    return [...list].sort((a, b) => ((b[sort] ?? -Infinity) as number) - ((a[sort] ?? -Infinity) as number));
+  }, [market, sort, query]);
+  const rows = showAll || query ? sorted.slice(0, 60) : sorted.slice(0, 12);
+
+  // 사용자가 단지를 고르면 상세가 보이는 곳으로 데려간다 (공유 링크로 처음 열릴 때는 움직이지 않는다)
+  const pick = (key: string | null) => {
+    pickedByUser.current = key !== null;
+    onPick(key);
+  };
+  useEffect(() => {
+    if (selectedKey && pickedByUser.current) detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedKey]);
   const selected = market?.complexes.find((c) => c.key === selectedKey) ?? null;
   const k = market?.kpi;
 
@@ -61,14 +75,17 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
             const first = s?.sgg.find((g) => regions?.live || snapSet.has(g.code)) ?? s?.sgg[0];
             if (first) onCode(first.code);
           }}>
-            {regions?.regions.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
+            {regions?.regions.map((s) => {
+              const ok = regions.live || s.sgg.some((g) => snapSet.has(g.code));
+              return <option key={s.code} value={s.code} disabled={!ok}>{s.name}{ok ? "" : " — 인증키 필요"}</option>;
+            })}
           </select>
         </div>
         <div className="ctl">
           <label htmlFor="sgg">시군구</label>
           <select id="sgg" value={code} onChange={(e) => onCode(e.target.value)}>
             {sido?.sgg.map((g) => (
-              <option key={g.code} value={g.code}>{g.name}{!regions?.live && !snapSet.has(g.code) ? " — 실시간 전용" : ""}</option>
+              <option key={g.code} value={g.code} disabled={!regions?.live && !snapSet.has(g.code)}>{g.name}{!regions?.live && !snapSet.has(g.code) ? " — 인증키 필요" : ""}</option>
             ))}
           </select>
         </div>
@@ -80,12 +97,15 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
         </div>
       </div>
 
+      {regions && !regions.live && (
+        <p className="fine ctl-note">지금은 국토교통부 공개 자료로 만든 스냅샷 {regions.snapshots.length}개 구({regions.snapshots.map((s) => s.name.split(" ").pop()).join(" · ")})를 조회할 수 있습니다. 서버에 공공데이터포털 인증키를 넣으면 전국 {regions.regions.reduce((a, s) => a + s.sgg.length, 0)}개 시군구가 실시간으로 열립니다.</p>
+      )}
       {error && <div className="notice warn" role="alert">{error}</div>}
       {loading && !market && <div className="notice">실거래가를 불러오는 중입니다…</div>}
 
       {market && k && (
         <div className={loading ? "dim" : ""}>
-          {market.meta.note && <div className="notice">{market.meta.note}</div>}
+          {market.meta.note && regions?.live && <div className="notice">{market.meta.note}</div>}
           <div className="kpis six">
             <Kpi label="전월세전환율 · 시장 역산" value={pctv(market.conv.ratePct, 2)}
               sub={<>{market.conv.method === "implied" ? `전세·월세 쌍 ${num(market.conv.n)}건` : "표본 부족 — 기본값"}{legalCapPct !== null && <> · 법정 상한 {pctv(legalCapPct, 2)}</>}</>} />
@@ -117,10 +137,15 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
 
           <figure>
             <figcaption>단지별 매매 단가와 총수익률 <span>매매·임대 각 3건 이상인 단지 {scatterItems.length}곳</span></figcaption>
-            <Scatter items={scatterItems} selected={selectedKey} onPick={onPick} xLabel="매매 단가 (만원/전용평)" yLabel="총수익률 (%)" />
+            <Scatter items={scatterItems} selected={selectedKey} onPick={pick} xLabel="매매 단가 (만원/전용평)" yLabel="총수익률 (%)" />
           </figure>
 
-          <div className="table-wrap">
+          <div className="table-tools">
+            <label htmlFor="cxq" className="field-label">단지 찾기</label>
+            <input id="cxq" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="단지명 또는 동 이름" autoComplete="off" />
+            {query && <span className="muted">{sorted.length}개 일치</span>}
+          </div>
+          <div className="table-wrap tight-top">
             <table className="data">
               <thead>
                 <tr>
@@ -129,8 +154,9 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
                 </tr>
               </thead>
               <tbody>
+                {rows.length === 0 && <tr><td colSpan={10} className="muted">일치하는 단지가 없습니다.</td></tr>}
                 {rows.map((c) => (
-                  <tr key={c.key} className={c.key === selectedKey ? "sel" : ""} onClick={() => onPick(c.key === selectedKey ? null : c.key)}>
+                  <tr key={c.key} className={c.key === selectedKey ? "sel" : ""} onClick={() => pick(c.key === selectedKey ? null : c.key)}>
                     <td><button type="button" className="rowbtn" aria-pressed={c.key === selectedKey}>{c.name}</button></td>
                     <td className="muted">{c.dong}</td>
                     <td className="num">{c.buildYear || "–"}</td><td className="num">{num(c.medArea, 1)}</td>
@@ -144,11 +170,11 @@ export function MarketSection({ regions, code, band, market, loading, error, sel
           </div>
           <div className="table-foot">
             <span>최근 12개월 임대 5건 이상 {num(market.counts.complexesListed)}개 단지 · 환산월세·매매단가 단위 만원/전용평 · 열 제목을 누르면 정렬</span>
-            {sorted.length > 12 && <button type="button" className="link" onClick={() => setShowAll((v) => !v)}>{showAll ? "상위 12개만" : `전체 ${sorted.length}개 보기`}</button>}
+            {!query && sorted.length > 12 && <button type="button" className="link" onClick={() => setShowAll((v) => !v)}>{showAll ? "상위 12개만" : "더 보기 (60개까지 · 나머지는 검색)"}</button>}
           </div>
 
           {selected && (
-            <div className="detail">
+            <div className="detail" ref={detailRef}>
               <div className="detail-head">
                 <div>
                   <h3>{selected.name}</h3>

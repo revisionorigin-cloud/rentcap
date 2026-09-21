@@ -4,12 +4,11 @@ import { useMemo } from "react";
 import { Heat } from "./charts";
 import { NumField, SectionHead } from "./fields";
 import { eok, mult, num, pct, pctv } from "@/lib/format";
-import { axis, grid, limits, type UWInput, type UWResult } from "@/lib/underwrite";
+import { axis, grid, type Limits, type UWInput, type UWResult } from "@/lib/underwrite";
 
-export function LimitsSection({ input, result, targetIrr, onTarget, legalCapPct }: {
-  input: UWInput; result: UWResult; targetIrr: number; onTarget: (v: number) => void; legalCapPct: number | null;
+export function LimitsSection({ input, result, L, targetIrr, onTarget, legalCapPct }: {
+  input: UWInput; result: UWResult; L: Limits; targetIrr: number; onTarget: (v: number) => void; legalCapPct: number | null;
 }) {
-  const L = useMemo(() => limits(input, targetIrr), [input, targetIrr]);
 
   const g1 = useMemo(() => {
     const rows = axis(input.exitCapPct, 0.25, 7, 0.5);

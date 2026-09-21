@@ -9,7 +9,9 @@ import { BASE_INPUT, positions, suggest, type Provenance } from "@/lib/assumptio
 import type { Rates } from "@/lib/ecos";
 import type { ComplexDetail, ComplexStat, Market } from "@/lib/market";
 import { BANDS, type AreaBand } from "@/lib/types";
-import { underwrite, type UWInput } from "@/lib/underwrite";
+import { mult, pct } from "@/lib/format";
+import { limits, underwrite, type UWInput } from "@/lib/underwrite";
+import { verdict } from "@/lib/verdict";
 
 const DEFAULT_CODE = "11560";
 const API_V = "2"; // 응답 형식을 바꾸면 올린다 — CDN·브라우저의 옛 캐시를 피한다
@@ -77,6 +79,10 @@ export default function App() {
   const [bench, setBench] = useState<Bench>(init.shared?.bench ?? "cd91");
   const [target, setTarget] = useState(init.shared?.target ?? 8);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  // 지금 입력이 어디서 왔는지 (지역 시장값 / 특정 단지 / 공유 링크) 와 그 뒤 손으로 고쳤는지
+  const [basis, setBasis] = useState<{ label: string; complexKey: string | null } | null>(init.shared ? { label: "공유 링크로 받은 가정", complexKey: null } : null);
+  const [edited, setEdited] = useState(false);
+  const [activeSec, setActiveSec] = useState("market");
   // 공유 링크로 들어왔으면 받은 가정을 그대로 두고, 아니면 첫 시장 데이터로 한 번만 채운다
   const autofill = useRef(init.shared === null);
   const inputRef = useRef(rawInput);
@@ -99,6 +105,7 @@ export default function App() {
             const s = suggest(inputRef.current, m, null);
             setInput(s.input);
             setFrom(s.from);
+            setBasis({ label: `${m.meta.name} 시장값`, complexKey: null });
           } catch {
             // 자동 채우기가 실패해도 시장 화면은 보여준다 — 기본 가정으로 시작
           }
@@ -139,15 +146,42 @@ export default function App() {
     const s = suggest(inputRef.current, m, c);
     setInput(s.input);
     setFrom(s.from);
+    setBasis({ label: c ? `${c.name} (${m.meta.name.split(" ").pop()})` : `${m.meta.name} 시장값`, complexKey: c?.key ?? null });
+    setEdited(false);
   }, []);
 
   const set = useCallback(<K extends keyof UWInput>(k: K, v: UWInput[K]) => {
     setInput((p) => ({ ...p, [k]: v }));
     setFrom((f) => (k in f ? { ...f, [k]: undefined } : f)); // 손으로 고친 값에서는 출처 표시를 뗀다
+    setEdited(true);
   }, []);
 
   const result = useMemo(() => underwrite(input), [input]);
   const pos = useMemo(() => positions(input, market, result.rate * 100, corpAA), [input, market, result.rate, corpAA]);
+  const L = useMemo(() => limits(input, target), [input, target]);
+  const V = useMemo(() => verdict(input, result, L, target, pos), [input, result, L, target, pos]);
+
+  const onReset = () => {
+    if (!market) return;
+    const c = basis?.complexKey ? market.complexes.find((x) => x.key === basis.complexKey) ?? null : null;
+    fill(market, c);
+  };
+
+  // 상단 메뉴에 지금 보고 있는 섹션을 표시한다
+  useEffect(() => {
+    const ids = ["market", "underwrite", "limits", "audit"];
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActiveSec(e.target.id);
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
+  }, []);
 
   // ── URL 동기화 (지역·면적·단지만. 가정 수치는 "링크 복사"를 눌렀을 때만 URL에 넣는다)
   useEffect(() => {
@@ -200,7 +234,9 @@ export default function App() {
         <div className="mast-in">
           <a className="brand" href="#top"><b>RENTCAP</b><span>임대주택 언더라이팅</span></a>
           <nav aria-label="섹션">
-            <a href="#market">시장</a><a href="#underwrite">언더라이팅</a><a href="#limits">한계선</a><a href="#audit">검증</a>
+            {([["market", "시장"], ["underwrite", "언더라이팅"], ["limits", "한계선"], ["audit", "검증"]] as const).map(([id, label]) => (
+              <a key={id} href={`#${id}`} className={activeSec === id ? "on" : ""} aria-current={activeSec === id ? "true" : undefined}>{label}</a>
+            ))}
           </nav>
           <div className="ticker" aria-label="금리">
             {rates?.rates.map((r) => <span key={r.id}><i>{r.label.replace("한국은행 ", "")}</i>{r.value.toFixed(2)}</span>)}
@@ -216,6 +252,11 @@ export default function App() {
             국토교통부 실거래가에서 임대료·매매가·전월세전환율을, 한국은행 ECOS에서 금리를 가져와 언더라이팅 입력을 채웁니다.
             모든 숫자에 표본 수와 출처가 붙고, 공공데이터로 확인할 수 없는 항목은 추정하지 않고 비워 둡니다.
           </p>
+          <ol className="steps">
+            <li><a href="#market"><b>1</b><span><strong>시장을 봅니다</strong>지역을 고르고, 관심 단지가 있으면 선택합니다</span></a></li>
+            <li><a href="#underwrite"><b>2</b><span><strong>가정을 확인합니다</strong>시장값으로 채워진 입력을 내 딜에 맞게 고칩니다</span></a></li>
+            <li><a href="#limits"><b>3</b><span><strong>한계선을 읽습니다</strong>얼마에 사야 하는지, 어디까지 버티는지 확인합니다</span></a></li>
+          </ol>
           <div className="status">
             <span className={`chip ${live ? "live" : ""}`}>{market ? (live ? "실거래가 · OpenAPI 실시간" : "실거래가 · 국토부 공개 CSV 스냅샷") : "실거래가 · 불러오는 중"}</span>
             <span className={`chip ${rates?.live ? "live" : ""}`}>{rates ? (rates.live ? `금리 · ECOS 실시간 ${rates.fetchedAt}` : "금리 · 마지막 확인값") : "금리 · 불러오는 중"}</span>
@@ -230,12 +271,20 @@ export default function App() {
           onFillComplex={(c) => { if (market) { fill(market, c); document.getElementById("underwrite")?.scrollIntoView({ behavior: "smooth" }); } }} />
 
         <UnderwriteSection input={input} set={set} result={result} pos={pos} from={from} rates={rates}
-          bench={bench} onBench={setBench} targetIrr={target} onShare={onShare} onCsv={onCsv} shareMsg={shareMsg} />
+          bench={bench} onBench={setBench} onShare={onShare} onCsv={onCsv} shareMsg={shareMsg}
+          verdict={V} basis={basis?.label ?? null} edited={edited} onReset={onReset} />
 
-        <LimitsSection input={input} result={result} targetIrr={target} onTarget={setTarget} legalCapPct={legalCapPct} />
+        <LimitsSection input={input} result={result} L={L} targetIrr={target} onTarget={setTarget} legalCapPct={legalCapPct} />
 
         <AuditSection market={market} rates={rates} result={result} live={Boolean(regions?.live)} />
       </main>
+
+      <a className={`mbar v-${V.tone}`} href="#results" aria-label="결과로 이동">
+        <span><i>IRR</i>{pct(result.leveredIrr)}</span>
+        <span><i>EM</i>{mult(result.equityMultiple)}</span>
+        <span><i>DSCR</i>{mult(result.minDscr)}</span>
+        <span className="mbar-go">결과 ↑</span>
+      </a>
 
       <footer className="foot">
         <div>RENTCAP · 2026 재직자 AI·D 30+ 집중캠프 R.E.VIBE 트랙 1 · 10조</div>

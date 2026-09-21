@@ -7,6 +7,7 @@ import type { Rates } from "@/lib/ecos";
 import { eok, mult, num, pct, pctv } from "@/lib/format";
 import { PY } from "@/lib/types";
 import type { UWInput, UWResult } from "@/lib/underwrite";
+import type { Verdict } from "@/lib/verdict";
 
 export type Bench = "cd91" | "ktb3" | "base" | "corpAA" | "manual";
 const ACQ_PRESETS = [
@@ -15,10 +16,11 @@ const ACQ_PRESETS = [
   { id: "custom", label: "직접 입력" },
 ];
 
-export function UnderwriteSection({ input, set, result, pos, from, rates, bench, onBench, targetIrr, onShare, onCsv, shareMsg }: {
+export function UnderwriteSection({ input, set, result, pos, from, rates, bench, onBench, onShare, onCsv, shareMsg, verdict, basis, edited, onReset }: {
   input: UWInput; set: <K extends keyof UWInput>(k: K, v: UWInput[K]) => void; result: UWResult;
   pos: Partial<Record<keyof UWInput | "allInRate", Position>>; from: Provenance; rates: Rates | null;
-  bench: Bench; onBench: (b: Bench) => void; targetIrr: number; onShare: () => void; onCsv: () => void; shareMsg: string | null;
+  bench: Bench; onBench: (b: Bench) => void; onShare: () => void; onCsv: () => void; shareMsg: string | null;
+  verdict: Verdict; basis: string | null; edited: boolean; onReset: () => void;
 }) {
   const r = result;
   const allIn = r.rate * 100;
@@ -35,8 +37,7 @@ export function UnderwriteSection({ input, set, result, pos, from, rates, bench,
     if (r.effLtv > 0.7) notes.push({ tone: "warn", text: r.loan > 0
       ? `보증금을 포함한 실질 LTV가 ${pct(r.effLtv, 1)}입니다. 대주는 선순위 임차보증금을 대출 한도에서 차감하는 것이 일반적이므로 LTV ${pctv(input.ltvPct, 0)} 조달이 어려울 수 있습니다.`
       : `승계 보증금만으로 매입가의 ${pct(r.effLtv, 1)}입니다 (반전세 구조). 추가 대출 여력이 없고, 임차인이 나갈 때 보증금을 돌려줄 유동성 — 역전세 위험 — 을 따로 확보해야 합니다.` });
-    if (r.leveredIrr !== null) notes.push({ tone: r.leveredIrr * 100 >= targetIrr ? "ok" : "warn", text: `Levered IRR ${pct(r.leveredIrr)} — 목표 ${pctv(targetIrr, 1)} ${r.leveredIrr * 100 >= targetIrr ? "충족" : "미달"}.` });
-    if (aggressive.length > 0) notes.push({ tone: "info", text: `시장 대비 공격적인 가정 ${aggressive.length}개 — 아래 입력란의 표시를 확인하십시오.` });
+    if (aggressive.length > 0) notes.push({ tone: "warn", text: `시장 대비 공격적인 가정 ${aggressive.length}개 — 입력란의 붉은 표시를 확인하십시오. 이 수익률은 그 가정이 실현될 때만 성립합니다.` });
   }
 
   return (
@@ -46,6 +47,14 @@ export function UnderwriteSection({ input, set, result, pos, from, rates, bench,
 
       <div className="uw">
         <div className="uw-inputs">
+          <div className="basis">
+            <div>
+              <span className="basis-label">가정 기준</span>
+              <b>{basis ?? "직접 입력"}</b>
+              {edited && <span className="basis-edited">수정됨</span>}
+            </div>
+            <button type="button" className="link" onClick={onReset} disabled={!edited}>시장값으로 되돌리기</button>
+          </div>
           <fieldset>
             <legend>자산</legend>
             <NumField label="세대수" unit="세대" value={input.units} step={1} min={1} onChange={(v) => set("units", Math.round(v))} />
@@ -103,7 +112,18 @@ export function UnderwriteSection({ input, set, result, pos, from, rates, bench,
           </fieldset>
         </div>
 
-        <div className="uw-results">
+        <div className="uw-results" id="results">
+          <div className={`verdict v-${verdict.tone}`} role="status">
+            <div className="verdict-label">결론</div>
+            <p className="verdict-head">{verdict.headline}</p>
+            {verdict.lender && <p className="verdict-sub">{verdict.lender}</p>}
+            <div className="tally" aria-label="가정 점검 요약">
+              <span className="t-agg">공격적 {verdict.tally.aggressive}</span>
+              <span className="t-neu">중립 {verdict.tally.neutral}</span>
+              <span className="t-con">보수적 {verdict.tally.conservative}</span>
+              <span className="t-na">자료 없음 {verdict.tally.na}</span>
+            </div>
+          </div>
           <div className="kpis four">
             <Kpi label={`Levered IRR${input.taxMode === "corp" ? " · 세후" : ""}`} value={pct(r.leveredIrr)} tone={r.leveredIrr !== null && r.leveredIrr < 0 ? "neg" : undefined} sub={`Unlevered ${pct(r.unleveredIrr)}`} />
             <Kpi label="Equity Multiple" value={mult(r.equityMultiple)} sub={`자기자본 ${eok(r.equity)}`} />
