@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "RENTCAP — 임대주택 언더라이팅",
-  description: "딜은 계산에서 틀리지 않습니다. 가정에서 틀립니다. 국토교통부 실거래가와 한국은행 금리로 가정을 채우고, 그 가정이 시장의 상위 몇 %인지 보여주는 오피스텔 통매입 언더라이팅.",
+  description: "기관투자자의 오피스텔 매입 검토. 국토교통부 실거래가와 한국은행 금리를 실시간으로 불러와 시장 확인 → 수익률 계산 → 매입가·한계선 확인의 3단계로 검토합니다.",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };

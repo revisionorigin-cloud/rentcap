@@ -246,17 +246,15 @@ export default function App() {
 
       <main id="top">
         <section className="intro">
-          <p className="eyebrow">오피스텔 통매입 · 수익성 검토</p>
-          <h1>딜은 계산에서 틀리지 않습니다.<br />가정에서 틀립니다.</h1>
+          <p className="eyebrow">RENTCAP · 임대주택 언더라이팅</p>
+          <h1>기관투자자의 오피스텔 매입 검토</h1>
           <p className="intro-lead">
-            임대료를 조금만 높게 잡아도 안 되던 딜이 되는 딜로 바뀝니다. 엑셀은 그 가정을 의심해 주지 않습니다.
-            RENTCAP은 가정을 국토교통부 실거래가와 한국은행 금리로 채우고, 각 가정이 시장의 상위 몇 %에 서 있는지 표시합니다.
-            데이터로 확인할 수 없는 값은 추정하지 않고 비워 둡니다.
+            국토교통부 실거래가와 한국은행 금리를 실시간으로 불러와, 다음 3단계로 매입 가격과 수익률을 검토합니다.
           </p>
           <ol className="steps">
-            <li><a href="#market"><b>1</b><span><strong>시장을 봅니다</strong>지역을 고르고, 관심 단지가 있으면 선택합니다</span></a></li>
-            <li><a href="#underwrite"><b>2</b><span><strong>가정을 확인합니다</strong>시장값으로 채워진 입력을 내 딜에 맞게 고칩니다</span></a></li>
-            <li><a href="#limits"><b>3</b><span><strong>한계선을 읽습니다</strong>얼마에 사야 하는지, 어디까지 버티는지 확인합니다</span></a></li>
+            <li><a href="#market"><b>STEP 1</b><span><strong>시장 확인</strong>지역을 고르면 임대료 · 매매가 · 전월세전환율 · 수익률이 나옵니다</span></a></li>
+            <li><a href="#underwrite"><b>STEP 2</b><span><strong>수익률 계산</strong>시장값으로 채워진 가정을 내 딜에 맞게 고칩니다. 가정마다 시장 대비 위치가 표시됩니다</span></a></li>
+            <li><a href="#limits"><b>STEP 3</b><span><strong>매입가 · 한계선 확인</strong>목표 수익률에 맞는 매입가와, 어디까지 나빠져도 버티는지 확인합니다</span></a></li>
           </ol>
           <div className="status">
             <span className={`chip ${live ? "live" : ""}`}>{market ? (live ? "실거래가 · OpenAPI 실시간" : "실거래가 · 국토부 공개 CSV 스냅샷") : "실거래가 · 불러오는 중"}</span>
